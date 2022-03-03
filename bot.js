@@ -126,21 +126,21 @@ function updateClass(crn){
         await page.waitForSelector('.panel__body') //when this loads I know that the classes are loaded.
 
         await page.waitForSelector(".panel__info-bar-text")
-        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent); 
-        
+        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent);
+
         var className = await page.evaluate(()=>document.querySelector(".result__code").textContent);
-        var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent); 
-    
+        var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent);
+
         const element = await page.waitForSelector('.result');
-        
+
         await element.click()
-        
+
         await page.waitForSelector(".detail-ssbsect_seats_avail");
-        
-        const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent); 
-        
+
+        const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent);
+
         let splitResult = result.split(':')
-    
+
         let fixedResult = Number(splitResult[1].substr(1))
         var spacesLeft = fixedResult;
 
@@ -148,15 +148,15 @@ function updateClass(crn){
         totalNumberOfSeats = totalNumberOfSeats.split(":")
         totalNumberOfSeats = totalNumberOfSeats[1]
         totalNumberOfSeats = Number(totalNumberOfSeats.substr(1))
-    
 
-    
+
+
 
         var d = new Date();
 
-            
-        
-               
+
+
+
         classesDB.updateOne({"CRN":crn},{
             $set: {
             "seatsLeft":spacesLeft,
@@ -166,12 +166,12 @@ function updateClass(crn){
 
         var currentClass = classesDB.find({ "CRN": crn });
         currentClass.toArray(function(err,thisClass){
-            
+
             var lastSeatsLeft = Number(thisClass[0].lastUpdatedAt);
-            
-            
+
+
             if(lastSeatsLeft-spacesLeft >= SEATCHANGE || (spacesLeft != lastSeatsLeft && spacesLeft < percentageForPanic * thisClass[0].totalSeats)){
-                
+
                 classesDB.updateOne({"CRN":crn},{
                     $set: {
                     "seatsLeft":spacesLeft,
@@ -190,18 +190,18 @@ function updateClass(crn){
                     "totalSeats":totalNumberOfSeats
                 }})
             }
-            
-            
-            
+
+
+
 
         })
-        
 
-        
-                  
+
+
+
         await browser.close();
-        
-        
+
+
     })();
 }
 
@@ -223,14 +223,11 @@ function updateUsersOnClass(crn){
     })
 }
 function updateUserOnClass(userID,crn){
- 
+
     bot.users.fetch(userID).then(function(actualUser){
         var classCursor = classesDB.find({"CRN":crn});
         classCursor.toArray(function(err,resultingClass){
             var currentClass = resultingClass[0];
-            actualUser.send("Hi! Just wanted to update you that CRN:" + currentClass.CRN + ", " + currentClass.classCode + ", " + currentClass.className + " currently has " + currentClass.seatsLeft + "/" + currentClass.totalSeats + " seats left.")
-            
-        }).catch(console.error);
 
 
 
@@ -240,7 +237,7 @@ function updateUserOnClass(userID,crn){
 
     },function(err){
         console.log(err);
-    })   
+    })
 
 
 }
@@ -267,30 +264,30 @@ function attemptToAddClassToDB(message,crn){
         await page.waitForSelector('.panel__body') //when this loads I know that the classes are loaded.
 
         await page.waitForSelector(".panel__info-bar-text")
-        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent); 
-        
+        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent);
+
         amountOfClasses = amountOfClasses.split(" ")
         amountOfClasses = Number(amountOfClasses[1])
         if(amountOfClasses != 1){
             message.channel.send("<@"+message.author.id+"> The CRN: " + crn + " did not return only one class. Please make sure that your CRN"+
             " is correct, by confirming on the classes.oregonstate.edu page.")
             xMessage(message)
-            
+
         }else{
-    
+
             var className = await page.evaluate(()=>document.querySelector(".result__code").textContent);
-            var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent); 
-      
+            var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent);
+
             const element = await page.waitForSelector('.result');
-            
+
             await element.click()
-            
+
             await page.waitForSelector(".detail-ssbsect_seats_avail");
-            
-            const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent); 
-            
+
+            const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent);
+
             let splitResult = result.split(':')
-        
+
             let fixedResult = Number(splitResult[1].substr(1))
             spacesLeft = fixedResult;
 
@@ -298,7 +295,7 @@ function attemptToAddClassToDB(message,crn){
             totalNumberOfSeats = totalNumberOfSeats.split(":")
             totalNumberOfSeats = totalNumberOfSeats[1]
             totalNumberOfSeats = Number(totalNumberOfSeats.substr(1))
-        
+
 
             classCursor= classesDB.find({"CRN":crn})
 
@@ -307,16 +304,16 @@ function attemptToAddClassToDB(message,crn){
             userCursor = usersDB.find({"userID":message.author.id})
 
             userCursor.toArray(function(err,users){
-               
+
                 if(users.length != 0){
-                    
+
                     var currentUserCRNs = users[0].crns;
                     if(currentUserCRNs.includes(crn)){
                         message.channel.send("<@"+message.author.id+"> You already are listening for this CRN!")
                         xMessage(message)
                     }else{
                         var currentUserCRNs = users[0].crns;
-                  
+
                         currentUserCRNs.push(crn)
                         usersDB.updateOne({"userID":message.author.id},
                             {$set:{
@@ -326,9 +323,9 @@ function attemptToAddClassToDB(message,crn){
                         message.channel.send("<@"+message.author.id+"> You are now listening for " + className + ", " + classFullDescription + ", CRN:" + crn + ". It currently has " + spacesLeft + "/" + totalNumberOfSeats+" seats left.")
                         checkmarkMessage(message)
                     }
-                  
+
                 }else{
-                    
+
                     newCRNList = [crn]
                     usersDB.insertOne({
                         "userID":message.author.id,
@@ -344,7 +341,7 @@ function attemptToAddClassToDB(message,crn){
 
             classCursor.toArray(function(err,classes){
                 if(classes.length==0){
-                   
+
                     classesDB.insertOne({
                         "CRN":crn,
                         "timeUpdated":d.getTime(),
@@ -358,8 +355,8 @@ function attemptToAddClassToDB(message,crn){
             })
         }
         await browser.close();
-        
-        
+
+
     })();
 }
 
@@ -393,7 +390,7 @@ function attemptToGetSeats(args, message){
     }else{
         message.channel.send("<@"+message.author.id+"> "+"Incorrect usage! Please do #getSeats {crn} where crn is an OSU class code with 5 digits. Example: #getSeats 12345")
         xMessage(message)
-         
+
     }
 }
 
@@ -417,8 +414,8 @@ function printSeatsLeftInCRN(crn,message){
         await page.waitForSelector('.panel__body') //when this loads I know that the classes are loaded.
 
         await page.waitForSelector(".panel__info-bar-text")
-        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent); 
-        
+        var amountOfClasses = await page.evaluate(()=> document.querySelector(".panel__info-bar-text").textContent);
+
         amountOfClasses = amountOfClasses.split(" ")
         amountOfClasses = Number(amountOfClasses[1])
         if(amountOfClasses != 1){
@@ -426,21 +423,21 @@ function printSeatsLeftInCRN(crn,message){
             " is correct, by confirming on the classes.oregonstate.edu page.")
             xMessage(message)
         }else{
-    
+
             var className = await page.evaluate(()=>document.querySelector(".result__code").textContent);
-            var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent); 
-       
+            var classFullDescription = await page.evaluate(()=> document.querySelector(".result__title").textContent);
+
 
             const element = await page.waitForSelector('.result');
-            
+
             await element.click()
-            
+
             await page.waitForSelector(".detail-ssbsect_seats_avail");
-            
-            const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent);  
-    
+
+            const result = await page.evaluate(()=> document.querySelector('.detail-ssbsect_seats_avail').textContent);
+
             let splitResult = result.split(':')
-        
+
             let fixedResult = Number(splitResult[1].substr(1))
             spacesLeft = fixedResult;
 
@@ -454,13 +451,9 @@ function printSeatsLeftInCRN(crn,message){
 
         }
         await browser.close();
-        
-        
+
+
     })();
-   
+
 
 }
-
-
-
-
