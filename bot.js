@@ -35,6 +35,8 @@ var app = express();
 const SEATCHANGE = 6
 const percentageForPanic = .3;
 
+const minutes = 5; //Time Interval for checks/update
+
 
 
 // Configure logger settings
@@ -50,7 +52,7 @@ var bot = new Discord.Client();
 bot.login(auth.token);
 
 bot.on('ready', function (evt) {
-    bot.user.setPresence({ activity: { name: 'Type #help for help!', type:"WATCHING"}, status: 'idle' })
+    bot.user.setPresence({ activity: { name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}, status: 'idle' })
      .then(console.log)
     .catch(console.error);
     logger.info('Connected');
@@ -74,7 +76,7 @@ bot.on('ready', function (evt) {
 bot.on('message', message=> {
     message.content
     // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
+    // It will listen for messages that will start with `#`
     if (message.content.substring(0, 1) == '#') {
         var args = message.content.substring(1).split(' ');
         var cmd = args[0];
@@ -105,7 +107,18 @@ bot.on('message', message=> {
      }
 });
 
+const tellTime = async function () {
+    console.log(new Date());
+    updateAllClassSeats();
+}
 
+
+const interval = minutes * 60 * 1000;
+
+setInterval(function() {
+    // catch all the errors.
+    tellTime().catch(console.log);
+}, interval);
 
 
 function updateAllClassSeats(){
@@ -183,6 +196,9 @@ function updateClass(crn){
 
             }else{
                 console.log("don't need to message users about class: ",crn);
+                console.log("seatsleft: ", spacesLeft);
+                // console.log("timeUpdated: ", d.getTime());
+                // console.log("totalSeats: ", totalNumberOfSeats);
                 classesDB.updateOne({"CRN":crn},{
                     $set: {
                     "seatsLeft":spacesLeft,
@@ -228,6 +244,9 @@ function updateUserOnClass(userID,crn){
         var classCursor = classesDB.find({"CRN":crn});
         classCursor.toArray(function(err,resultingClass){
             var currentClass = resultingClass[0];
+            actualUser.send("Hi! Just wanted to update you that CRN:" + currentClass.CRN + ", " + currentClass.classCode + ", " + currentClass.className + " currently has " + currentClass.seatsLeft + "/" + currentClass.totalSeats + " seats left. https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999")
+
+        })//.catch(console.error);
 
 
 
@@ -248,7 +267,7 @@ function listenForCLass(message,args){
         attemptToAddClassToDB(message,args[0])
 
     }else{
-        message.channel.send("<@"+message.author.id+"> "+"Incorrect usage! Please do #getSeats {crn} where crn is an OSU class code with 5 digits. Example: #getSeats 12345") 
+        message.channel.send("<@"+message.author.id+"> "+"Incorrect usage! Please do #listen {crn} where crn is an OSU class code with 5 digits. Example: #listen 12345")
         xMessage(message)
     }
 
