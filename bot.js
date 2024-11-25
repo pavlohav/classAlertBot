@@ -1,4 +1,4 @@
-var Discord = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 var logger = require('winston');
 var auth = require('./auth.json');
 var axios = require('axios')
@@ -48,13 +48,17 @@ logger.add(new logger.transports.Console, {
 
 logger.level = 'debug';
 // Initialize Discord Bot
-var bot = new Discord.Client();
+var bot = new Client({
+    intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+	],
+});
 bot.login(auth.token);
 
 bot.on('ready', function (evt) {
-    bot.user.setPresence({ activity: { name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}, status: 'idle' })
-     .then(console.log)
-    .catch(console.error);
+    bot.user.setPresence({ activity: [{ name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}], status: 'idle' })
     logger.info('Connected');
    
     MongoClient.connect(MONGO_URL, function (err, client) {
