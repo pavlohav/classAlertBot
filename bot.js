@@ -78,7 +78,7 @@ bot.on('ready', function (evt) {
     })
 });
 
-bot.on('message', message=> {
+bot.on('messageCreate', message=> {
     message.content
     // Our bot needs to know if it will execute a command
     // It will listen for messages that will start with `#`
