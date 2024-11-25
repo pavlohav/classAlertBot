@@ -20,12 +20,13 @@ const {
 const e = require('express');
 const PORT = process.env.PORT || 3001;
 
+const puppeteerBrowserArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process'];
 
 
 var MongoClient = require('mongodb').MongoClient;
 
 const MONGOPORT = process.env.MONGOPORT || 27017
-const MONGO_URL = "mongodb://localhost:" + MONGOPORT + "/main";
+const MONGO_URL = "mongodb://mydatabaseuser:password@mongo:" + MONGOPORT;
 var classesDB  
 var usersDB                 //classes database
 
@@ -66,7 +67,7 @@ bot.on('ready', function (evt) {
         if (err) {
             throw err;
         }
-        db = mongoDBDatabase = client.db('main');
+        db = mongoDBDatabase = client.db('mydatabase');
         classesDB = db.collection('classes');
         usersDB = db.collection('users')
     
@@ -136,7 +137,9 @@ function updateAllClassSeats(){
 
 function updateClass(crn){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {headless: "new"}
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
@@ -280,7 +283,11 @@ function listenForCLass(message,args){
 
 function attemptToAddClassToDB(message,crn){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {
+                puppeteerBrowserArgs,
+            }
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
@@ -430,7 +437,18 @@ let spacesLeft;
 
 function printSeatsLeftInCRN(crn,message){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {
+                args: [
+                    "--disable-gpu", // usually not available on containers
+                    "--disable-dev-shm-usage", // This flag is necessary to avoid running into issues with Docker’s default low shared memory space of 64MB. Chrome will write into /tmp instead
+                    // disable sandbox when using ROOT user (not recommended)
+                    "--disable-setuid-sandbox", 
+                    "--no-sandbox",
+                    "--single-process" // FATAL:zygote_main_linux.cc(162)] Check failed: sandbox::ThreadHelpers::IsSingleThreaded()
+                ],
+            }
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
