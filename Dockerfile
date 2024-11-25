@@ -1,76 +1,51 @@
+# Dockerfile based from https://github.com/puppeteer/puppeteer/blob/0c7136fe62df9a8a709b70c99df8e4810b0d034a/docker/Dockerfile
+FROM node:22@sha256:5c76d05034644fa8ecc9c2aa84e0a83cd981d0ef13af5455b87b9adf5b216561
+
+ENV \
+    # Configure default locale (important for chrome-headless-shell).
+    LANG=en_US.UTF-8 \
+    # UID of the non-root user 'pptruser'
+    PPTRUSER_UID=10042
+
+# Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
+# Note: this installs the necessary libs to make the bundled version of Chrome that Puppeteer
+# installs, work.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros \
+    fonts-kacst fonts-freefont-ttf dbus dbus-x11
+
+# Add pptruser.
+RUN groupadd -r pptruser && useradd -u $PPTRUSER_UID -rm -g pptruser -G audio,video pptruser
+
+USER $PPTRUSER_UID
+
+WORKDIR /home/pptruser
+
+# COPY puppeteer-browsers-latest.tgz puppeteer-latest.tgz puppeteer-core-latest.tgz ./
+
+ENV DBUS_SESSION_BUS_ADDRESS autolaunch:
+
+# Install @puppeteer/browsers, puppeteer and puppeteer-core into /home/pptruser/node_modules.
+RUN npm i @puppeteer/browsers@2.4.1 puppeteer@23.9.0 puppeteer-core@23.9.0
+
+# Install system dependencies as root.
+USER root
+RUN npx puppeteer browsers install chrome --install-deps
+
+USER $PPTRUSER_UID
+# Generate THIRD_PARTY_NOTICES using chrome --credits.
+RUN node -e "require('child_process').execSync(require('puppeteer').executablePath() + ' --credits', {stdio: 'inherit'})" > THIRD_PARTY_NOTICES
 
 
-# # FROM --platform=linux/arm64/v8 node:14
-# # FROM ubuntu:latest
-# FROM ghcr.io/puppeteer/puppeteer:latest
-
-# ENV DISCORD_TOKEN "OTEyNTUxODI0MjQwODEyMDYz.GUqsGk.xZCK2lbhjmrxHydenxyKs53yt4BWKPbOLsLGAc"
-# EXPOSE 27017
-# WORKDIR /home/pptruser
-# COPY package*.json ./
-# COPY . .
-# # RUN apt-get update && \
-# #     apt-get install -y chromium-browser curl && \
-# #     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-# #     apt-get install -y nodejs
-
-
-# # RUN npm install -g nodemon
-
-
-# RUN npm install 
-# # EXPOSE 9229
-# # CMD ["nodemon", "--inspect", "bot.js"]
-# # RUN node node_modules/puppeteer/install.js
 
 
 
-# # Adding securityContext parameters
-# USER 82
-# # Uncomment the line below if you want to enable readOnlyRootFilesystem
-# # RUN chown -R 82:82 /home/pptruser && chmod -R 777 /home/pptruser
+# ClassAlertBot Docker Setup
 
-# # RUN node node_modules/puppeteer/install.mjs
-
-
-# CMD ["--cap-add=SYS_ADMIN"]
-# CMD ["node", "bot.js"]
-
-
-
-FROM --platform=linux/amd64 node:20
-# FROM ubuntu:latest
-# FROM ghcr.io/puppeteer/puppeteer:latest
-
-ENV DISCORD_TOKEN "OTEyNTUxODI0MjQwODEyMDYz.GUqsGk.xZCK2lbhjmrxHydenxyKs53yt4BWKPbOLsLGAc"
-EXPOSE 27017
-# WORKDIR /home/pptruser
 COPY package*.json ./
-COPY . .
-# RUN apt-get update && \
-#     apt-get install -y chromium-browser curl && \
-#     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-#     apt-get install -y nodejs
-RUN apt-get update 
-RUN apt-get install -y fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 --no-install-recommends
-
-# RUN npm install -g nodemon
-
-
-RUN npm install 
-# EXPOSE 9229
-# CMD ["nodemon", "--inspect", "bot.js"]
-# RUN node node_modules/puppeteer/install.js
-
-
-
-# Adding securityContext parameters
-# USER 82
-# Uncomment the line below if you want to enable readOnlyRootFilesystem
-# RUN chown -R 82:82 /home/pptruser && chmod -R 777 /home/pptruser
-
-# RUN node node_modules/puppeteer/install.mjs
-
+COPY ./bot.js ./
+COPY ./auth.json ./
+RUN npm install --verbose
 
 CMD ["--cap-add=SYS_ADMIN"]
 CMD ["node", "bot.js"]

@@ -1,14 +1,13 @@
 # Use root/example as user/password credentials
-version: '3.1'
-
 services:
-
   mongo:
     image: mongo
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: mydatabaseuser
       MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./data/mongo/:/data/db
   # mongo-express:
   #   image: mongo-express
   #   restart: always
@@ -19,6 +18,7 @@ services:
   #     ME_CONFIG_MONGODB_ADMINPASSWORD: password
   #     ME_CONFIG_MONGODB_URL: mongodb://mydatabaseuser:password@mongo:27017/
   classalertbot:
+    restart: always
     build: 
       dockerfile: Dockerfile
     ports: 

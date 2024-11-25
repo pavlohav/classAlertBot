@@ -26,8 +26,13 @@ const puppeteerBrowserArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--sin
 var MongoClient = require('mongodb').MongoClient;
 
 const MONGOPORT = process.env.MONGOPORT || 27017
-const MONGO_URL = "mongodb://mydatabaseuser:password@mongo:" + MONGOPORT;
-var classesDB  
+const MONGO_DB = auth.mongo_db || process.env.MONGO_DB;
+const MONGO_USER = auth.mongo_user || process.env.MONGO_USER;
+const MONGO_PASS = auth.mongo_pass || process.env.MONGO_PASS;
+const MONGO_IP = auth.mongo_ip || process.env.MONGO_IP;
+const MONGO_URL = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_IP}:${MONGOPORT}`;
+
+var classesDB;
 var usersDB                 //classes database
 
 var app = express();
@@ -67,7 +72,7 @@ bot.on('ready', function (evt) {
         if (err) {
             throw err;
         }
-        db = mongoDBDatabase = client.db('mydatabase');
+        db = mongoDBDatabase = client.db(MONGO_DB);
         classesDB = db.collection('classes');
         usersDB = db.collection('users')
     
