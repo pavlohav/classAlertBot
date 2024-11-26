@@ -44,7 +44,6 @@ RUN node -e "require('child_process').execSync(require('puppeteer').executablePa
 
 COPY package*.json ./
 COPY ./bot.js ./
-COPY ./auth.json ./
 RUN npm install --verbose
 
 CMD ["--cap-add=SYS_ADMIN"]
