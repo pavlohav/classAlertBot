@@ -19,7 +19,12 @@ services:
   #     ME_CONFIG_MONGODB_URL: mongodb://mydatabaseuser:password@mongo:27017/
   classalertbot:
     restart: always
-    build: 
-      dockerfile: Dockerfile
+    image: ghcr.io/pavlohav/classalertbot:main
+    environment:
+      - MONGO_USER=mydatabaseuser
+      - MONGO_PASS=password
+      - MONGO_DB=mydatabase
+      - MONGO_IP=mongo
+      - DISCORD_AUTH=
     ports: 
       - "27017:27017"

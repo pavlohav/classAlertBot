@@ -1,6 +1,5 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 var logger = require('winston');
-var auth = require('./auth.json');
 var axios = require('axios')
 var fs = require('fs');
 
@@ -26,11 +25,13 @@ const puppeteerBrowserArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--sin
 var MongoClient = require('mongodb').MongoClient;
 
 const MONGOPORT = process.env.MONGOPORT || 27017
-const MONGO_DB = auth.mongo_db || process.env.MONGO_DB;
-const MONGO_USER = auth.mongo_user || process.env.MONGO_USER;
-const MONGO_PASS = auth.mongo_pass || process.env.MONGO_PASS;
-const MONGO_IP = auth.mongo_ip || process.env.MONGO_IP;
+const MONGO_DB = process.env.MONGO_DB || auth.mongo_db;
+const MONGO_USER = process.env.MONGO_USER || auth.mongo_user;
+const MONGO_PASS = process.env.MONGO_PASS || auth.mongo_pass;
+const MONGO_IP = process.env.MONGO_IP || auth.mongo_ip;
 const MONGO_URL = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_IP}:${MONGOPORT}`;
+
+const DISCORD_AUTH = process.env.DISCORD_AUTH || auth.token;
 
 var classesDB;
 var usersDB                 //classes database
@@ -61,7 +62,7 @@ var bot = new Client({
 		GatewayIntentBits.MessageContent,
 	],
 });
-bot.login(auth.token);
+bot.login(DISCORD_AUTH);
 
 bot.on('ready', function (evt) {
     bot.user.setPresence({ activity: [{ name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}], status: 'idle' })
