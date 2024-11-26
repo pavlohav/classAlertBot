@@ -19,7 +19,6 @@ const {
 const e = require('express');
 const PORT = process.env.PORT || 3001;
 
-const puppeteerBrowserArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process'];
 
 
 var MongoClient = require('mongodb').MongoClient;
@@ -144,7 +143,16 @@ function updateAllClassSeats(){
 function updateClass(crn){
     (async () => {
         const browser = await puppeteer.launch(
-            {headless: "new"}
+            {
+                args: [
+                    "--disable-gpu", // usually not available on containers
+                    "--disable-dev-shm-usage", // This flag is necessary to avoid running into issues with Docker’s default low shared memory space of 64MB. Chrome will write into /tmp instead
+                    // disable sandbox when using ROOT user (not recommended)
+                    "--disable-setuid-sandbox", 
+                    "--no-sandbox",
+                    "--single-process" // FATAL:zygote_main_linux.cc(162)] Check failed: sandbox::ThreadHelpers::IsSingleThreaded()
+                ],
+            }
         );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
@@ -291,7 +299,14 @@ function attemptToAddClassToDB(message,crn){
     (async () => {
         const browser = await puppeteer.launch(
             {
-                puppeteerBrowserArgs,
+                args: [
+                    "--disable-gpu", // usually not available on containers
+                    "--disable-dev-shm-usage", // This flag is necessary to avoid running into issues with Docker’s default low shared memory space of 64MB. Chrome will write into /tmp instead
+                    // disable sandbox when using ROOT user (not recommended)
+                    "--disable-setuid-sandbox", 
+                    "--no-sandbox",
+                    "--single-process" // FATAL:zygote_main_linux.cc(162)] Check failed: sandbox::ThreadHelpers::IsSingleThreaded()
+                ],
             }
         );
         const page = await browser.newPage();
