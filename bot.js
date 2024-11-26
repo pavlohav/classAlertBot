@@ -32,6 +32,8 @@ const MONGO_PASS = auth.mongo_pass || process.env.MONGO_PASS;
 const MONGO_IP = auth.mongo_ip || process.env.MONGO_IP;
 const MONGO_URL = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_IP}:${MONGOPORT}`;
 
+const DISCORD_AUTH = auth.token || process.env.DISCORD_AUTH;
+
 var classesDB;
 var usersDB                 //classes database
 
@@ -61,6 +63,7 @@ var bot = new Client({
 		GatewayIntentBits.MessageContent,
 	],
 });
+console.log("Discord auth token: ", DISCORD_AUTH)
 bot.login(auth.token);
 
 bot.on('ready', function (evt) {
