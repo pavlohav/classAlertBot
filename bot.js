@@ -1,4 +1,4 @@
-var Discord = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 var logger = require('winston');
 var auth = require('./auth.json');
 var axios = require('axios')
@@ -20,13 +20,19 @@ const {
 const e = require('express');
 const PORT = process.env.PORT || 3001;
 
+const puppeteerBrowserArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--single-process'];
 
 
 var MongoClient = require('mongodb').MongoClient;
 
 const MONGOPORT = process.env.MONGOPORT || 27017
-const MONGO_URL = "mongodb://localhost:" + MONGOPORT + "/main";
-var classesDB  
+const MONGO_DB = auth.mongo_db || process.env.MONGO_DB;
+const MONGO_USER = auth.mongo_user || process.env.MONGO_USER;
+const MONGO_PASS = auth.mongo_pass || process.env.MONGO_PASS;
+const MONGO_IP = auth.mongo_ip || process.env.MONGO_IP;
+const MONGO_URL = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_IP}:${MONGOPORT}`;
+
+var classesDB;
 var usersDB                 //classes database
 
 var app = express();
@@ -48,13 +54,17 @@ logger.add(new logger.transports.Console, {
 
 logger.level = 'debug';
 // Initialize Discord Bot
-var bot = new Discord.Client();
+var bot = new Client({
+    intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+	],
+});
 bot.login(auth.token);
 
 bot.on('ready', function (evt) {
-    bot.user.setPresence({ activity: { name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}, status: 'idle' })
-     .then(console.log)
-    .catch(console.error);
+    bot.user.setPresence({ activity: [{ name: 'Type #getseats for getseats and #listen to track a class', type:"WATCHING"}], status: 'idle' })
     logger.info('Connected');
    
     MongoClient.connect(MONGO_URL, function (err, client) {
@@ -62,7 +72,7 @@ bot.on('ready', function (evt) {
         if (err) {
             throw err;
         }
-        db = mongoDBDatabase = client.db('main');
+        db = mongoDBDatabase = client.db(MONGO_DB);
         classesDB = db.collection('classes');
         usersDB = db.collection('users')
     
@@ -73,7 +83,7 @@ bot.on('ready', function (evt) {
     })
 });
 
-bot.on('message', message=> {
+bot.on('messageCreate', message=> {
     message.content
     // Our bot needs to know if it will execute a command
     // It will listen for messages that will start with `#`
@@ -132,7 +142,9 @@ function updateAllClassSeats(){
 
 function updateClass(crn){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {headless: "new"}
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
@@ -276,7 +288,11 @@ function listenForCLass(message,args){
 
 function attemptToAddClassToDB(message,crn){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {
+                puppeteerBrowserArgs,
+            }
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
@@ -426,7 +442,18 @@ let spacesLeft;
 
 function printSeatsLeftInCRN(crn,message){
     (async () => {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch(
+            {
+                args: [
+                    "--disable-gpu", // usually not available on containers
+                    "--disable-dev-shm-usage", // This flag is necessary to avoid running into issues with Docker’s default low shared memory space of 64MB. Chrome will write into /tmp instead
+                    // disable sandbox when using ROOT user (not recommended)
+                    "--disable-setuid-sandbox", 
+                    "--no-sandbox",
+                    "--single-process" // FATAL:zygote_main_linux.cc(162)] Check failed: sandbox::ThreadHelpers::IsSingleThreaded()
+                ],
+            }
+        );
         const page = await browser.newPage();
         const url = "https://classes.oregonstate.edu/?keyword="+crn+"&srcdb=999999"
         await page.goto(url);
