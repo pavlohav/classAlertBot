@@ -62,7 +62,6 @@ var bot = new Client({
 		GatewayIntentBits.MessageContent,
 	],
 });
-console.log("Discord auth token: ", DISCORD_AUTH)
 bot.login(DISCORD_AUTH);
 
 bot.on('ready', function (evt) {
