@@ -1,11 +1,13 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 var logger = require('winston');
-var axios = require('axios')
+var axios = require('axios');
+const axiosRetry = require('axios-retry').default;
+
 var fs = require('fs');
 
 var exphbs = require("express-handlebars");
 var bodyParser = require('body-parser');
-var express = require('express')
+var express = require('express');
 
 var nodemailer = require('nodemailer')
 const puppeteer = require('puppeteer');
@@ -15,10 +17,14 @@ const {
 const {
     Console
 } = require('console');
+const { v4: uuidv4 } = require('uuid');
+
 
 const e = require('express');
 const PORT = process.env.PORT || 3001;
 
+const HEALTHCHECKS_URL = process.env.HEALTHCHECK;
+axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 
 var MongoClient = require('mongodb').MongoClient;
@@ -124,10 +130,33 @@ const tellTime = async function () {
 
 
 const interval = minutes * 60 * 1000;
-
-setInterval(function() {
-    // catch all the errors.
-    tellTime().catch(console.log);
+setInterval(async function () {
+    const RID = uuidv4();
+    try {
+        if (HEALTHCHECKS_URL) {
+            await axios.get(`${HEALTHCHECKS_URL}/start?rid=${RID}`);
+        }
+    }
+    catch (error) {
+        console.error('Error in HealthCheck: ', error);
+    }
+    try {
+        await tellTime();
+        if (HEALTHCHECKS_URL) {
+            await axios.get(`${HEALTHCHECKS_URL}?rid=${RID}`);
+        }
+    } catch (error) {
+        if (HEALTHCHECKS_URL) {
+            const logFile = '/tmp/error.log';
+            fs.writeFileSync(logFile, error.stack);
+            await axios.post(`${HEALTHCHECKS_URL}/fail?rid=${RID}`, fs.createReadStream(logFile), {
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                }
+            });
+        }
+        console.error('Error: ', error);
+    }
 }, interval);
 
 
